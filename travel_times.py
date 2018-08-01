@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import googlemaps
 from datetime import datetime
 
@@ -12,5 +14,9 @@ def get_travel_time(src_lat=18.997739, src_lon=72.841280, dst_lat=18.880253, dst
 	                                     departure_time=now
 	                                    )
 
-	print(directions_result[0]['legs'][0]['distance']['text'])
-	print(directions_result[0]['legs'][0]['duration']['text'])
+	mins = directions_result[0]['legs'][0]['duration']['value']
+	return mins
+
+if __name__ == '__main__':
+	mins = get_travel_time()
+	print(mins)
