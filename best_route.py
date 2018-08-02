@@ -7,6 +7,20 @@ from ortools.constraint_solver import pywrapcp
 
 gmaps = googlemaps.Client(key='AIzaSyAzlWRJShTKDbxXe1GFrlr7oFFlYmxjxbg')
 
+def time_from_seconds(seconds):
+    total_mins = seconds / 60
+    hours = total_mins / 60
+    mins = total_mins % 60
+
+    hours_str = "hours"
+    if hours == 1:
+        hours_str = "hour"
+    mins_str = "minutes"
+    if mins == 1:
+        mins_str = "minute"
+
+    return "%d %s %d %s" % (hours, hours_str, mins, mins_str)
+
 def create_distance_callback(dist_matrix):
   # Create a callback to calculate distances between cities.
 
@@ -17,7 +31,9 @@ def create_distance_callback(dist_matrix):
     # print(dist_matrix)
 
     try:
-        print("checking distance between points (%d, %d) -> %d" % (from_node, to_node, dist_matrix[from_node][to_node]))
+        seconds = dist_matrix[from_node][to_node]
+        time = time_from_seconds(seconds)
+        print("checking distance between points (%d, %d) -> %s" % (from_node, to_node, time))
         return dist_matrix[from_node][to_node]
     except Exception, e:
         print("checking distance between points (%d, %d) -> error" % (from_node, to_node))
@@ -28,9 +44,12 @@ def create_distance_callback(dist_matrix):
 def solve_shortest_route(locations):
     count = len(locations)
 
+    # NOTE: Even if you specify imperial units (units="imperial"), the distance will
+    # be internally represented in kilometers!
+
     # convert matrix returned from API into a usable matrix of integers
     # for the solver (api_matrix -> dist_matrix)
-    api_matrix = distance_matrix(gmaps, locations, locations, "driving")
+    api_matrix = distance_matrix(gmaps, locations, locations, mode="driving", units="imperial")
 
     dist_matrix = [[0 for i in range(count)] for j in range(count)]
     rows = api_matrix["rows"]
@@ -43,9 +62,9 @@ def solve_shortest_route(locations):
             element = cols[j]
 
             duration = element["duration"]["value"]
-            distance = element["distance"]["value"]
+            # distance = element["distance"]["value"]
 
-            dist_matrix[i][j] = distance
+            dist_matrix[i][j] = duration
 
     print(api_matrix)
 
@@ -80,7 +99,11 @@ def solve_shortest_route(locations):
         assignment = routing.SolveWithParameters(search_parameters)
         if assignment:
             # Solution distance.
-            print "Total distance: " + str(assignment.ObjectiveValue()) + " miles\n"
+            # print "Total distance: " + str(assignment.ObjectiveValue()) + " miles\n"
+
+            # Represent as time (using travel time instead of distance)
+            print "Total time: " + time_from_seconds(assignment.ObjectiveValue())
+
             # Display the solution.
             # Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
             route_number = 0
